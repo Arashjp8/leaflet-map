@@ -11,12 +11,19 @@ interface LocationMarkerProps {
     findLocationTrigger: number;
     onLoadingChange: (isLoading: boolean) => void;
     onErrorChange: (error: string | null) => void;
+    timeout?: number;
+    maxRetries?: number;
+    retryDelay?: number;
 }
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 3000;
-
-export function LocationMarker({ findLocationTrigger, onLoadingChange, onErrorChange }: LocationMarkerProps) {
+export function LocationMarker({
+    findLocationTrigger,
+    onLoadingChange,
+    onErrorChange,
+    timeout = 3000,
+    maxRetries = 3,
+    retryDelay = 3000,
+}: LocationMarkerProps) {
     const [position, setPosition] = useState<IPosition | null>(null);
     const [retryCount, setRetryCount] = useState(0);
     const mapRef = useRef<LeafletMap | null>(null);
@@ -33,16 +40,16 @@ export function LocationMarker({ findLocationTrigger, onLoadingChange, onErrorCh
             map.flyTo(e.latlng, map.getZoom());
         },
         locationerror(e) {
-            if (retryCount < MAX_RETRIES) {
+            if (retryCount < maxRetries) {
                 setRetryCount(retryCount + 1);
-                const errorMsg = `Location acquisition timed out. Retrying... (${retryCount + 1}/${MAX_RETRIES})`;
+                const errorMsg = `Location acquisition timed out. Retrying... (${retryCount + 1}/${maxRetries})`;
                 onErrorChange(errorMsg);
                 retryTimeoutRef.current = setTimeout(() => {
                     onLoadingChange(true);
                     map.locate();
-                }, RETRY_DELAY);
+                }, retryDelay);
             } else {
-                const errorMsg = `Geolocation error: ${e.message} (Max retries reached)`;
+                const errorMsg = `${e.message} (Max retries reached)`;
                 onLoadingChange(false);
                 onErrorChange(errorMsg);
                 setRetryCount(0);
@@ -62,9 +69,9 @@ export function LocationMarker({ findLocationTrigger, onLoadingChange, onErrorCh
             }
             onErrorChange(null);
             onLoadingChange(true);
-            map.locate({ timeout: 3000 }); // 3 second timeout
+            map.locate({ timeout }); // 3 second timeout by default
         }
-    }, [findLocationTrigger, map, onErrorChange, onLoadingChange]);
+    }, [findLocationTrigger, map, onErrorChange, onLoadingChange, timeout]);
 
     return (
         <>
