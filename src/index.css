@@ -1,5 +1,90 @@
 @import "tailwindcss";
 
+@theme {
+
+    /* animations */
+    @keyframes modalOpen {
+        0% {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes modalClose {
+        0% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        100% {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+    }
+
+    --animate-modal-open: modalOpen 0.3s forwards;
+    --animate-modal-close: modalClose 0.3s forwards;
+
+    /* Background Colors */
+    --color-background: #f3f4f6;
+    --color-on-background: #364153;
+    --color-on-background-varient: #42474e;
+
+    /* Surface Colors */
+    --color-surface: #ffffff;
+    --color-on-surface: #000000;
+    --color-on-surface-varient: #42474e;
+
+    /* Outline Color */
+    --color-outline: #d1d5dc;
+    --color-outline-variant: #8a8a8a;
+
+    /* Primary Color */
+    --color-primary: #2563eb;
+    --color-on-primary: #ffffff;
+    --color-primary-container: #dbeafe;
+    --color-on-primary-container: #1e40af;
+    --color-primary-hover: #1d4ed8;
+
+    /* error Color */
+    --color-error: #dc2626;
+    --color-on-error: #ffffff;
+    --color-error-container: #fee2e2;
+    --color-on-error-container: #991b1b;
+    --color-error-hover: #b91c1c;
+
+    /* success Color */
+    --color-success: #059669;
+    --color-on-success: #ffffff;
+    --color-success-container: #d1fae5;
+    --color-on-success-container: #065f46;
+    --color-success-hover: #047857;
+
+    /* info Color */
+    --color-info: #0891b2;
+    --color-on-info: #ffffff;
+    --color-info-container: #cffafe;
+    --color-on-info-container: #155e75;
+    --color-info-hover: #0e7490;
+
+    --color-mood-red: #dc2626;
+    --color-mood-orange: #f97316;
+    --color-mood-yellow: #facc15;
+    --color-mood-blue: var(--color-info);
+    --color-mood-green: #059669;
+
+    --color-google-btn-bg: #ffffff;
+    --color-google-btn-text: #000000;
+    --color-google-btn-border: #dadce0;
+    --color-google-btn-hover-bg: #f7f7f7;
+    --color-google-btn-hover-border: #c6c6c6;
+}
+
 /* #map { */
 /*     height: 180px; */
 /* } */

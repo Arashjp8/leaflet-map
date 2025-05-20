@@ -1,6 +1,8 @@
 import { MapContainer, Marker, Popup, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import { useEffect, useRef, useState } from "react";
+import type { Map as LeafletMap } from "leaflet";
+import Button from "./components/Button";
 
 interface IPosition {
     lat: number;
@@ -10,44 +12,42 @@ interface IPosition {
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 3000;
 
-function LocationMarker() {
+interface LocationMarkerProps {
+    findLocationTrigger: number;
+    onLoadingChange: (isLoading: boolean) => void;
+    onErrorChange: (error: string | null) => void;
+}
+
+function LocationMarker({ findLocationTrigger, onLoadingChange, onErrorChange }: LocationMarkerProps) {
     const [position, setPosition] = useState<IPosition | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
+    const mapRef = useRef<LeafletMap | null>(null);
 
     const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const map = useMapEvents({
-        click() {
-            if (!position) {
-                if (retryTimeoutRef.current) {
-                    clearTimeout(retryTimeoutRef.current);
-                }
-                setError(null);
-                setLoading(true);
-                map.locate({ timeout: 3000 }); // 3 second timeout
-            }
-        },
         locationfound(e) {
             if (retryTimeoutRef.current) {
                 clearTimeout(retryTimeoutRef.current);
             }
             setPosition(e.latlng);
-            setLoading(false);
+            onLoadingChange(false);
+            onErrorChange(null);
             map.flyTo(e.latlng, map.getZoom());
         },
         locationerror(e) {
-            setLoading(false);
+            onLoadingChange(false);
             if (retryCount < MAX_RETRIES) {
                 setRetryCount(retryCount + 1);
-                setError(`Location acquisition timed out. Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+                const errorMsg = `Location acquisition timed out. Retrying... (${retryCount + 1}/${MAX_RETRIES})`;
+                onErrorChange(errorMsg);
                 retryTimeoutRef.current = setTimeout(() => {
-                    setLoading(true);
+                    onLoadingChange(true);
                     map.locate();
                 }, RETRY_DELAY);
             } else {
-                setError(`Geolocation error: ${e.message} (Max retries reached)`);
+                const errorMsg = `Geolocation error: ${e.message} (Max retries reached)`;
+                onErrorChange(errorMsg);
                 setRetryCount(0);
                 setPosition(null);
             }
@@ -55,15 +55,26 @@ function LocationMarker() {
     });
 
     useEffect(() => {
+        mapRef.current = map;
+    }, [map]);
+
+    useEffect(() => {
+        if (findLocationTrigger > 0) {
+            if (retryTimeoutRef.current) {
+                clearTimeout(retryTimeoutRef.current);
+            }
+            onErrorChange(null);
+            onLoadingChange(true);
+            map.locate({ timeout: 3000 }); // 3 second timeout
+        }
+    }, [findLocationTrigger, map, onErrorChange, onLoadingChange]);
+
+    useEffect(() => {
         console.log("position:", position);
-        console.log("loading:", loading);
-        console.log("error:", error);
-    }, [position, loading, error]);
+    }, [position]);
 
     return (
         <>
-            {/* {loading && <div className="location-feedback">Finding your location...</div>} */}
-            {/* {error && <div className="location-feedback error">{error}</div>} */}
             {position && (
                 <Marker position={position}>
                     <Popup>You are here</Popup>
@@ -75,14 +86,51 @@ function LocationMarker() {
 }
 
 function App() {
+    const [findLocationTrigger, setFindLocationTrigger] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    const handleFindLocation = () => {
+        setFindLocationTrigger((prev) => prev + 1);
+    };
+
+    useEffect(() => {
+        console.log("loading:", isLoading);
+        console.log("error:", error);
+    }, [isLoading, error]);
+
     return (
         <div className="w-screen h-screen">
-            <MapContainer center={[35.6892, 51.389]} zoom={11} scrollWheelZoom={false} className="w-full h-full">
+            <div className="absolute z-10 top-4 right-4">
+                <div className="flex gap-2">
+                    <Button variant="contained" size="small" onClick={handleFindLocation} loading={isLoading}>
+                        Find My Location
+                    </Button>
+                    <Button variant="contained" size="small">
+                        Reset View
+                    </Button>
+                </div>
+            </div>
+            {error && (
+                <div className="absolute z-10 top-16 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
+                    {error}
+                </div>
+            )}
+            <MapContainer
+                center={[35.6892, 51.389]}
+                zoom={11}
+                scrollWheelZoom={false}
+                className="absolute w-full h-full z-0"
+            >
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
-                <LocationMarker />
+                <LocationMarker
+                    findLocationTrigger={findLocationTrigger}
+                    onLoadingChange={setIsLoading}
+                    onErrorChange={setError}
+                />
             </MapContainer>
         </div>
     );
